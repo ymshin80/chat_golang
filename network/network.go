@@ -2,8 +2,14 @@ package network
 
 import (
 	"chat_server_golang/service"
+	"encoding/json"
+	"log"
 	"net"
+	"os"
+	"os/signal"
+	"syscall"
 
+	"github.com/confluentinc/confluent-kafka-go/kafka"
 	"github.com/gin-contrib/cors"
 
 	"github.com/gin-gonic/gin"
@@ -87,8 +93,38 @@ func (s *Server) setServerInfo() {
 
 }
 func (n *Server) StartServer() error {
-	
 	n.setServerInfo()
+	
+	channel := make(chan os.Signal, 1)
+	signal.Notify(channel, syscall.SIGINT)
+
+	//서버가 down 될때 이벤트 발생
+	go func() {
+		<- channel
+		//이벤트가 발생되면 input
+		
+		if err := n.service.ServerSet(n.ip+n.port, false); err != nil {
+			log.Println("Failed To Set ServerInfo When Close", "err", err)
+		} 
+
+		type ServerInfoEvent struct {
+			IP string
+			Status bool
+		}
+
+		e := &ServerInfoEvent{IP: n.ip+n.port, Status: false}
+		ch := make(chan kafka.Event)
+
+		if v, err := json.Marshal(e); err != nil {
+			log.Println("Failed To Marshal", "err", err)
+		} else if result, err := n.service.PublishEvent("test-topic",v, ch); err != nil {
+			log.Println("Failed To Marshal", "err", err)
+		} else {
+			log.Println("Success To Send", result)
+		}
+		os.Exit(1)
+
+	}()
 
 
 	return n.engine.Run(n.port)
