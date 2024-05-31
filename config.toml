@@ -1,3 +1,7 @@
 [db]
 database ="mysql"
 url="ymshin:ymshin@tcp(127.0.0.1:3306)/chatting?parseTime=true"
+
+[kafka]
+URL = "localhost:19092"
+ClientID = "chat-producer-1"

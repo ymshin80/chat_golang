@@ -2,7 +2,7 @@ package network
 
 import (
 	"chat_server_golang/service"
-	"log"
+	"net"
 
 	"github.com/gin-contrib/cors"
 
@@ -56,9 +56,40 @@ func NewServer(service *service.Service,  port string ) *Server {
 	//n.engine.GET("/room", r.SocketServe)
 	return s
 }
+func (s *Server) setServerInfo() {
+	//ip, 
 
+	if addrs, err := net.InterfaceAddrs(); err != nil {
+		panic(err)
+	} else {
+		var ip net.IP
+
+		for _, addr := range addrs{
+			if ipnet, ok := addr.(*net.IPNet);  ok {
+				if 	!ipnet.IP.IsLoopback() && ipnet.IP.To4() != nil {
+					ip = ipnet.IP
+					break
+				}
+
+			}
+		}
+		if ip == nil {
+			panic("no ip address found")
+		} else {
+			if err = s.service.ServerSet(ip.String()+s.port, true); err != nil {
+				panic(err)
+			} else {
+				s.ip = ip.String()
+			}
+		}
+	}
+
+
+}
 func (n *Server) StartServer() error {
-	log.Print("starting server")
+	
+	n.setServerInfo()
+
 
 	return n.engine.Run(n.port)
 }
