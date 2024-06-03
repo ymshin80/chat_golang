@@ -2,14 +2,12 @@ package network
 
 import (
 	"chat_server_golang/service"
-	"encoding/json"
 	"log"
 	"net"
 	"os"
 	"os/signal"
 	"syscall"
 
-	"github.com/confluentinc/confluent-kafka-go/kafka"
 	"github.com/gin-contrib/cors"
 
 	"github.com/gin-gonic/gin"
@@ -54,6 +52,11 @@ func NewServer(service *service.Service,  port string ) *Server {
 	}))
 
 	registerServer(s)
+
+	//시작하면 control server에 알려줌. 
+
+
+
 	//default
 	//r := NewRoom()
 	//goroutine  백그라운드에서 동작.. 
@@ -87,6 +90,8 @@ func (s *Server) setServerInfo() {
 			} else {
 				s.ip = ip.String()
 			}
+			//서버 시작 이벤트 발생
+			s.service.PublishServerStatusEvent(ip.String()+s.port, true)
 		}
 	}
 
@@ -107,21 +112,7 @@ func (n *Server) StartServer() error {
 			log.Println("Failed To Set ServerInfo When Close", "err", err)
 		} 
 
-		type ServerInfoEvent struct {
-			IP string
-			Status bool
-		}
-
-		e := &ServerInfoEvent{IP: n.ip+n.port, Status: false}
-		ch := make(chan kafka.Event)
-
-		if v, err := json.Marshal(e); err != nil {
-			log.Println("Failed To Marshal", "err", err)
-		} else if result, err := n.service.PublishEvent("test-topic",v, ch); err != nil {
-			log.Println("Failed To Marshal", "err", err)
-		} else {
-			log.Println("Success To Send", result)
-		}
+		n.service.PublishServerStatusEvent(n.ip+n.port, false)
 		os.Exit(1)
 
 	}()
