@@ -20,7 +20,7 @@ func NewService(repository  *repository.Repository) *Service{
 }
 
 func (s *Service)  PublishEvent(topic string, value []byte, ch chan kafka.Event) (kafka.Event, error) {
-	return s.PublishEvent(topic, value, ch)
+	return s.repository.Kafka.PublishEvent(topic, value, ch)
 }
 
 func (s *Service) ServerSet(ip string, available bool) error {
